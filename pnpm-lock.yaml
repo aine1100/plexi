@@ -11,6 +11,9 @@ importers:
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
+      cloudinary:
+        specifier: ^2.8.0
+        version: 2.8.0
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -29,6 +32,9 @@ importers:
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -881,6 +887,10 @@ packages:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
 
+  cloudinary@2.8.0:
+    resolution: {integrity: sha512-s7frvR0HnQXeJsQSIsbLa/I09IMb1lOnVLEDH5b5E53WTiCYgrNNOBGV/i/nLHwrcEOUkqjfSwP1+enXWNYmdw==}
+    engines: {node: '>=9'}
+
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
     engines: {node: '>=7.0.0'}
@@ -1259,6 +1269,11 @@ packages:
     resolution: {integrity: sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==}
     engines: {node: '>= 0.4'}
 
+  goober@2.1.18:
+    resolution: {integrity: sha512-2vFqsaDVIT9Gz7N6kAL++pLpp41l3PfDuusHcjnGLfR6+huZkl6ziX+zgVC3ZxpqWhzH6pyDdGrCeDhMIvwaxw==}
+    peerDependencies:
+      csstype: ^3.0.10
+
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -1605,6 +1620,9 @@ packages:
   lodash.once@4.1.1:
     resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
 
+  lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
@@ -1843,6 +1861,14 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
+  q@1.5.1:
+    resolution: {integrity: sha512-kV/CThkXo6xyFEZUugw/+pIOywXcDbFYgSct5cT3gqlbkBE1SJdwy6UQoZvodiWF/ckQLZyDE/Bu1M6gVu5lVw==}
+    engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
+    deprecated: |-
+      You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
+      (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
+
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -1850,6 +1876,13 @@ packages:
     resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
     peerDependencies:
       react: ^19.2.3
+
+  react-hot-toast@2.6.0:
+    resolution: {integrity: sha512-bH+2EBMZ4sdyou/DPrfgIouFpcRLCJ+HoCA32UoAYHn6T3Ur5yfcDCeSr5mwldl6pFOsiocmrXMuoCJ1vV8bWg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=16'
+      react-dom: '>=16'
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -3062,6 +3095,11 @@ snapshots:
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
 
+  cloudinary@2.8.0:
+    dependencies:
+      lodash: 4.17.21
+      q: 1.5.1
+
   color-convert@2.0.1:
     dependencies:
       color-name: 1.1.4
@@ -3589,6 +3627,10 @@ snapshots:
       define-properties: 1.2.1
       gopd: 1.2.0
 
+  goober@2.1.18(csstype@3.2.3):
+    dependencies:
+      csstype: 3.2.3
+
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
@@ -3912,6 +3954,8 @@ snapshots:
 
   lodash.once@4.1.1: {}
 
+  lodash@4.17.21: {}
+
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
@@ -4142,12 +4186,21 @@ snapshots:
 
   punycode@2.3.1: {}
 
+  q@1.5.1: {}
+
   queue-microtask@1.2.3: {}
 
   react-dom@19.2.3(react@19.2.3):
     dependencies:
       react: 19.2.3
       scheduler: 0.27.0
+
+  react-hot-toast@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+    dependencies:
+      csstype: 3.2.3
+      goober: 2.1.18(csstype@3.2.3)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
 
   react-is@16.13.1: {}
 

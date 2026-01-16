@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
-  ArrowUpRight, 
-  ArrowDownRight, 
   Users, 
   MousePointer2, 
-  Clock, 
   TrendingUp, 
   Globe, 
   Download,
   Target,
-  Inbox
+  Inbox,
+  Eye
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 
@@ -35,11 +33,59 @@ export default function AnalyticsPage() {
     }
   };
 
-  const topResources = [
-    { name: "Plexi Starter", views: "2.4k", conversion: "18%", growth: "+12%" },
-    { name: "UI Foundry", views: "1.8k", conversion: "15%", growth: "+5%" },
-    { name: "Clean Stack", views: "1.2k", conversion: "12%", growth: "-2%" },
-  ];
+  const topResources = dbStats?.topResources || [];
+
+  // Generate chart data from daily stats
+  const chartData = useMemo(() => {
+    if (!dbStats?.daily) return [];
+    
+    // Get last 7 days
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const stats = dbStats.daily[dateStr] || { views: 0, clicks: 0 };
+      days.push({ date: dateStr, dayName, ...stats });
+    }
+    return days;
+  }, [dbStats]);
+
+  // Generate SVG path from chart data
+  const generateChartPath = (data: any[], key: 'views' | 'clicks', chartHeight = 200) => {
+    if (data.length === 0) return { path: "", points: [], fillPath: "" };
+    
+    const maxValue = Math.max(...data.map(d => d[key]), 1);
+    const width = 800;
+    const step = width / (data.length - 1 || 1);
+    
+    const points = data.map((d, i) => ({
+      x: i * step,
+      y: chartHeight - (d[key] / maxValue) * (chartHeight - 20) - 10,
+      value: d[key]
+    }));
+    
+    if (points.length === 0) return { path: "", points: [], fillPath: "" };
+    
+    let path = `M${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const cp1x = points[i-1].x + step / 3;
+      const cp1y = points[i-1].y;
+      const cp2x = points[i].x - step / 3;
+      const cp2y = points[i].y;
+      path += ` C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${points[i].x} ${points[i].y}`;
+    }
+    
+    const fillPath = `M${points[0].x} ${chartHeight} L${points[0].x} ${points[0].y}` + 
+      path.substring(path.indexOf(' ')) + 
+      ` L${points[points.length-1].x} ${chartHeight} Z`;
+    
+    return { path, points, fillPath };
+  };
+
+  const viewsChart = useMemo(() => generateChartPath(chartData, 'views'), [chartData]);
+  const clicksChart = useMemo(() => generateChartPath(chartData, 'clicks'), [chartData]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -63,10 +109,10 @@ export default function AnalyticsPage() {
       {/* Stats Overview */}
       <div className="grid grid-cols-4 gap-6">
         {[
-          { label: "Total Visitors", value: dbStats?.lastThirty || "0", growth: "+14.2%", icon: Users },
-          { label: "Resource Clicks", value: dbStats?.total || "0", growth: "+8.4%", icon: MousePointer2 },
-          { label: "Conv. Rate", value: "8.2%", growth: "+1.2%", icon: Target },
-          { label: "New Submissions", value: "12", growth: "+2", icon: Inbox },
+          { label: "Total Views", value: dbStats?.totalViews || "0", growth: "+14.2%", icon: Users },
+          { label: "Total Clicks", value: dbStats?.totalClicks || "0", growth: "+8.4%", icon: MousePointer2 },
+          { label: "Conv. Rate", value: (dbStats?.conversionRate || "0") + "%", growth: "+1.2%", icon: Target },
+          { label: "Pending Submissions", value: dbStats?.pendingSubmissions || "0", growth: "+" + (dbStats?.pendingSubmissions || "0"), icon: Inbox },
         ].map((stat, i) => (
           <div key={i} className="p-8 bg-white rounded-[40px] border border-black/5 hover:border-black/10 transition-all group">
             <div className="flex items-center justify-between mb-6">
@@ -105,67 +151,65 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-72 w-full relative group mt-4">
-            <svg viewBox="0 0 800 240" className="w-full h-full overflow-visible">
-              {[0, 60, 120, 180, 240].map((y) => (
+            <svg viewBox="0 0 800 200" className="w-full h-full overflow-visible">
+              {/* Grid lines */}
+              {[0, 50, 100, 150, 200].map((y) => (
                 <line key={y} x1="0" y1={y} x2="800" y2={y} stroke="black" strokeOpacity="0.03" strokeWidth="1" />
               ))}
               
-              <path 
-                d="M0 240 L0 180 C 100 170, 200 210, 300 130 S 400 50, 500 110 S 600 180, 700 70 S 800 40, 800 40 L 800 240 Z" 
-                fill="black" 
-                fillOpacity="0.03"
-              />
-              <path 
-                d="M0 180 C 100 170, 200 210, 300 130 S 400 50, 500 110 S 600 180, 700 70 S 800 40, 800 40" 
-                fill="none" 
-                stroke="black" 
-                strokeOpacity="0.1"
-                strokeWidth="2" 
-                strokeDasharray="8 8"
-              />
-
+              {/* Gradient definition */}
               <defs>
                 <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="black" stopOpacity="0.15" />
                   <stop offset="100%" stopColor="black" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <path 
-                d="M0 240 L0 160 C 80 140, 160 190, 240 100 S 320 20, 400 60 S 480 140, 560 30 S 640 10, 720 50 S 800 20, 800 20 L 800 240 Z" 
-                fill="url(#chartGradient)" 
-              />
-              <path 
-                d="M0 160 C 80 140, 160 190, 240 100 S 320 20, 400 60 S 480 140, 560 30 S 640 10, 720 50 S 800 20, 800 20" 
-                fill="none" 
-                stroke="black" 
-                strokeWidth="4" 
-                strokeLinecap="round" 
-                className="drop-shadow-[0_10px_10px_rgba(0,0,0,0.1)]"
-              />
+              
+              {/* Fill area */}
+              {viewsChart.fillPath && (
+                <path d={viewsChart.fillPath} fill="url(#chartGradient)" />
+              )}
+              
+              {/* Line */}
+              {viewsChart.path && (
+                <path 
+                  d={viewsChart.path} 
+                  fill="none" 
+                  stroke="black" 
+                  strokeWidth="3" 
+                  strokeLinecap="round" 
+                  className="drop-shadow-[0_10px_10px_rgba(0,0,0,0.1)]"
+                />
+              )}
 
-              {[
-                { x: 240, y: 100 },
-                { x: 400, y: 60 },
-                { x: 560, y: 30 },
-                { x: 800, y: 20 }
-              ].map((pt, i) => (
+              {/* Data points with hover tooltips */}
+              {viewsChart.points.map((pt: any, i: number) => (
                 <g key={i} className="cursor-pointer group/pt">
                   <circle cx={pt.x} cy={pt.y} r="8" fill="white" className="shadow-sm" />
                   <circle cx={pt.x} cy={pt.y} r="4" fill="black" />
                   
                   <g className="opacity-0 group-hover/pt:opacity-100 transition-opacity duration-200">
-                    <rect x={pt.x - 40} y={pt.y - 45} width="80" height="32" rx="10" fill="black" />
+                    <rect x={pt.x - 35} y={pt.y - 45} width="70" height="32" rx="10" fill="black" />
                     <text x={pt.x} y={pt.y - 25} textAnchor="middle" fill="white" fontSize="11" fontWeight="900" className="pointer-events-none">
-                      {Math.floor(Math.random() * 500) + 1200}
+                      {pt.value} views
                     </text>
                   </g>
                 </g>
               ))}
+              
+              {/* Empty state message */}
+              {viewsChart.points.length === 0 && (
+                <text x="400" y="100" textAnchor="middle" fill="#999" fontSize="14" fontWeight="700">
+                  No analytics data yet - views will appear here
+                </text>
+              )}
             </svg>
           </div>
 
           <div className="grid grid-cols-7 gap-2">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+            {chartData.length > 0 ? chartData.map(day => (
+                <span key={day.date} className="text-center text-[11px] font-black text-[#999] uppercase tracking-wider">{day.dayName}</span>
+            )) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                 <span key={day} className="text-center text-[11px] font-black text-[#999] uppercase tracking-wider">{day}</span>
             ))}
           </div>
@@ -175,14 +219,16 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-[40px] border border-black/5 p-8 flex flex-col gap-6 shadow-sm">
           <h2 className="text-xl font-black tracking-tight">Top Performing</h2>
           <div className="flex flex-col gap-4">
-            {topResources.map((res) => (
-              <div key={res.name} className="p-4 rounded-3xl border border-black/2 bg-[#FDFCF9] flex flex-col gap-3">
+            {topResources.length === 0 ? (
+              <div className="text-center py-8 text-[#999]">
+                <p className="text-[13px] font-bold">No resources yet</p>
+              </div>
+            ) : topResources.map((res: any) => (
+              <div key={res.id || res.name} className="p-4 rounded-3xl border border-black/2 bg-[#FDFCF9] flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                     <h4 className="text-[14px] font-black">{res.name}</h4>
-                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
-                        res.growth.startsWith('+') ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                    }`}>
-                        {res.growth}
+                    <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-green-50 text-green-600">
+                        {res.clicks} clicks
                     </span>
                 </div>
                 <div className="flex items-center justify-between">

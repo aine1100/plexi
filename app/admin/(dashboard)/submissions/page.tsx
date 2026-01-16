@@ -10,6 +10,7 @@ import {
     ExternalLink,
     MessageSquare
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function AdminSubmissions() {
     const [submissions, setSubmissions] = useState<any[]>([]);
@@ -55,10 +56,10 @@ export default function AdminSubmissions() {
             
             // Remove from local state
             setSubmissions(submissions.filter(s => s.id !== id));
-            alert(approved ? "Resource approved and listed!" : "Submission rejected.");
+            toast.success(approved ? "Resource approved and listed!" : "Submission rejected.");
         } catch (error) {
             console.error("Action failed:", error);
-            alert("Failed to process submission. Please try again.");
+            toast.error("Failed to process submission");
         }
     };
 

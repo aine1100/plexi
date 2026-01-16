@@ -1,16 +1,104 @@
 "use client";
 
-import { useState } from "react";
-import { Bell, Search, User, Sparkles, Inbox, TrendingUp, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Search, User, Sparkles, Inbox, TrendingUp, Clock, FileText } from "lucide-react";
 
-const notifications = [
-  { id: 1, title: "New Submission", desc: "Studio Portfolio by Alex", icon: Inbox, time: "2m ago", color: "text-orange-500", bg: "bg-orange-50" },
-  { id: 2, title: "Traffic Spike", desc: "Views increased by 15%", icon: TrendingUp, time: "1h ago", color: "text-green-500", bg: "bg-green-50" },
-  { id: 3, title: "System Update", desc: "New features are live", icon: Sparkles, time: "3h ago", color: "text-blue-500", bg: "bg-blue-50" },
-];
+interface Notification {
+  id: string;
+  title: string;
+  desc: string;
+  icon: any;
+  time: string;
+  color: string;
+  bg: string;
+}
 
 export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      // Fetch pending submissions as notifications
+      const submissionsRes = await fetch("/api/submissions");
+      const submissions = await submissionsRes.json();
+      
+      const notifs: Notification[] = [];
+      
+      // Add pending submissions as notifications
+      if (Array.isArray(submissions)) {
+        const pending = submissions.filter((s: any) => s.status === "PENDING").slice(0, 3);
+        pending.forEach((sub: any) => {
+          notifs.push({
+            id: `sub-${sub.id}`,
+            title: "New Submission",
+            desc: `${sub.resourceTitle} by ${sub.submitterName || "Anonymous"}`,
+            icon: Inbox,
+            time: formatTimeAgo(new Date(sub.createdAt)),
+            color: "text-orange-500",
+            bg: "bg-orange-50"
+          });
+        });
+      }
+
+      // Fetch recent resources as activity
+      const resourcesRes = await fetch("/api/resources");
+      const resources = await resourcesRes.json();
+      
+      if (Array.isArray(resources) && resources.length > 0) {
+        const recent = resources.slice(0, 2);
+        recent.forEach((res: any) => {
+          if (res.views > 0) {
+            notifs.push({
+              id: `res-${res.id}`,
+              title: "Resource Activity",
+              desc: `${res.title} has ${res.views} views`,
+              icon: TrendingUp,
+              time: formatTimeAgo(new Date(res.updatedAt || res.createdAt)),
+              color: "text-green-500",
+              bg: "bg-green-50"
+            });
+          }
+        });
+      }
+
+      // If no real notifications, show welcome message
+      if (notifs.length === 0) {
+        notifs.push({
+          id: "welcome",
+          title: "Welcome!",
+          desc: "No new notifications",
+          icon: Sparkles,
+          time: "Just now",
+          color: "text-blue-500",
+          bg: "bg-blue-50"
+        });
+      }
+
+      setNotifications(notifs);
+      setUnreadCount(notifs.filter(n => n.id.startsWith("sub-")).length);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
+
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
 
   return (
     <header className="h-20 border-b border-black/5 bg-white/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-8">
@@ -33,7 +121,11 @@ export default function Header() {
             className={`h-11 w-11 flex items-center justify-center rounded-2xl bg-black/5 border border-transparent hover:border-black/5 hover:bg-white transition-all relative ${showNotifications ? 'bg-white border-black/5' : ''}`}
           >
             <Bell className="h-4 w-4 text-[#666]" />
-            <div className="absolute top-3 right-3 h-2 w-2 bg-red-500 rounded-full border-2 border-white"></div>
+            {unreadCount > 0 && (
+              <div className="absolute top-2 right-2 h-4 w-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                <span className="text-[8px] font-bold text-white">{unreadCount}</span>
+              </div>
+            )}
           </button>
 
           {showNotifications && (
@@ -45,7 +137,12 @@ export default function Header() {
               <div className="absolute right-0 top-14 z-50 w-80 bg-white rounded-[32px] border border-black/5 shadow-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-[15px] font-black tracking-tight">Notifications</h3>
-                  <button className="text-[11px] font-bold text-[#999] hover:text-black">Mark all read</button>
+                  <button 
+                    className="text-[11px] font-bold text-[#999] hover:text-black"
+                    onClick={() => fetchNotifications()}
+                  >
+                    Refresh
+                  </button>
                 </div>
                 <div className="flex flex-col gap-4">
                   {notifications.map((notif) => (
@@ -82,3 +179,4 @@ export default function Header() {
     </header>
   );
 }
+

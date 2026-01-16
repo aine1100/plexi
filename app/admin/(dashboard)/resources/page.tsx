@@ -5,17 +5,13 @@ import {
   Plus, 
   Search, 
   Filter, 
-  MoreVertical, 
-  ArrowRight,
-  Database,
-  Globe,
-  Tag,
   Edit2,
   Trash2,
   ExternalLink
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import AddResourceModal from "@/components/admin/AddResourceModal";
+import toast from "react-hot-toast";
 
 export default function AdminResources() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,9 +35,7 @@ export default function AdminResources() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this resource?")) return;
-    
+  const handleDelete = async (id: string, title: string) => {
     try {
       const response = await fetch(`/api/resources/${id}`, {
         method: "DELETE",
@@ -49,11 +43,11 @@ export default function AdminResources() {
       
       if (!response.ok) throw new Error("Failed to delete");
       
-      // Remove from local state
       setResources(resources.filter(r => r.id !== id));
+      toast.success(`"${title}" deleted successfully`);
     } catch (error) {
       console.error("Failed to delete resource:", error);
-      alert("Failed to delete resource. Please try again.");
+      toast.error("Failed to delete resource");
     }
   };
 
@@ -165,7 +159,7 @@ export default function AdminResources() {
                     <button title="Edit Resource" className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-black/5 text-[#666] hover:text-black transition-all">
                       <Edit2 className="h-4 w-4" />
                     </button>
-                    <button title="Delete Resource" onClick={() => handleDelete(template.id)} className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-50 text-[#666] hover:text-red-500 transition-all">
+                    <button title="Delete Resource" onClick={() => handleDelete(template.id, template.title)} className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-50 text-[#666] hover:text-red-500 transition-all">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
