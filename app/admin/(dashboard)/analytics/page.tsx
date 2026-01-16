@@ -1,31 +1,46 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
   Users, 
   MousePointer2, 
   Clock, 
-  TrendingUp,
-  Globe,
-  Download
+  TrendingUp, 
+  Globe, 
+  Download,
+  Target,
+  Inbox
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 
-const stats = [
-  { label: "Total Visits", value: "48,294", trend: "+12.5%", isUp: true },
-  { label: "Unique Users", value: "12,843", trend: "+8.2%", isUp: true },
-  { label: "Bounce Rate", value: "42.3%", trend: "-2.4%", isUp: true },
-  { label: "Avg. Session", value: "4m 32s", trend: "-12s", isUp: false },
-];
-
-const topResources = [
-  { name: "Plexi Starter", views: "2.4k", conversion: "18%", growth: "+12%" },
-  { name: "UI Foundry", views: "1.8k", conversion: "15%", growth: "+5%" },
-  { name: "Clean Stack", views: "1.2k", conversion: "12%", growth: "-2%" },
-];
-
 export default function AnalyticsPage() {
+  const [dbStats, setDbStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+        const response = await fetch("/api/analytics/summary");
+        const data = await response.json();
+        setDbStats(data);
+    } catch (error) {
+        console.error("Failed to fetch analytics:", error);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const topResources = [
+    { name: "Plexi Starter", views: "2.4k", conversion: "18%", growth: "+12%" },
+    { name: "UI Foundry", views: "1.8k", conversion: "15%", growth: "+5%" },
+    { name: "Clean Stack", views: "1.2k", conversion: "12%", growth: "-2%" },
+  ];
+
   return (
     <div className="flex flex-col gap-10">
       {/* Header */}
@@ -45,19 +60,24 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-6 rounded-[32px] border border-black/5 shadow-sm">
-            <p className="text-[13px] font-bold text-[#999] mb-1">{stat.label}</p>
-            <div className="flex items-end justify-between">
-              <h3 className="text-2xl font-black">{stat.value}</h3>
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black ${
-                stat.isUp ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-              }`}>
-                {stat.isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {stat.trend}
+      {/* Stats Overview */}
+      <div className="grid grid-cols-4 gap-6">
+        {[
+          { label: "Total Visitors", value: dbStats?.lastThirty || "0", growth: "+14.2%", icon: Users },
+          { label: "Resource Clicks", value: dbStats?.total || "0", growth: "+8.4%", icon: MousePointer2 },
+          { label: "Conv. Rate", value: "8.2%", growth: "+1.2%", icon: Target },
+          { label: "New Submissions", value: "12", growth: "+2", icon: Inbox },
+        ].map((stat, i) => (
+          <div key={i} className="p-8 bg-white rounded-[40px] border border-black/5 hover:border-black/10 transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-black/5 flex items-center justify-center text-[#666] group-hover:bg-black group-hover:text-white transition-all">
+                <stat.icon className="h-5 w-5" />
               </div>
+              <span className="text-[12px] font-black text-green-500 bg-green-500/5 px-3 py-1 rounded-full">{stat.growth}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[32px] font-black tracking-tight">{isLoading ? "..." : stat.value}</span>
+              <span className="text-[13px] font-bold text-[#999] tracking-tight">{stat.label}</span>
             </div>
           </div>
         ))}
@@ -86,12 +106,10 @@ export default function AnalyticsPage() {
 
           <div className="h-72 w-full relative group mt-4">
             <svg viewBox="0 0 800 240" className="w-full h-full overflow-visible">
-              {/* Grid lines */}
               {[0, 60, 120, 180, 240].map((y) => (
                 <line key={y} x1="0" y1={y} x2="800" y2={y} stroke="black" strokeOpacity="0.03" strokeWidth="1" />
               ))}
               
-              {/* Secondary Area (Last Month) */}
               <path 
                 d="M0 240 L0 180 C 100 170, 200 210, 300 130 S 400 50, 500 110 S 600 180, 700 70 S 800 40, 800 40 L 800 240 Z" 
                 fill="black" 
@@ -106,7 +124,6 @@ export default function AnalyticsPage() {
                 strokeDasharray="8 8"
               />
 
-              {/* Main Area (This Month) */}
               <defs>
                 <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="black" stopOpacity="0.15" />
@@ -126,7 +143,6 @@ export default function AnalyticsPage() {
                 className="drop-shadow-[0_10px_10px_rgba(0,0,0,0.1)]"
               />
 
-              {/* Data Points */}
               {[
                 { x: 240, y: 100 },
                 { x: 400, y: 60 },
@@ -137,7 +153,6 @@ export default function AnalyticsPage() {
                   <circle cx={pt.x} cy={pt.y} r="8" fill="white" className="shadow-sm" />
                   <circle cx={pt.x} cy={pt.y} r="4" fill="black" />
                   
-                  {/* Tooltip Simulation */}
                   <g className="opacity-0 group-hover/pt:opacity-100 transition-opacity duration-200">
                     <rect x={pt.x - 40} y={pt.y - 45} width="80" height="32" rx="10" fill="black" />
                     <text x={pt.x} y={pt.y - 25} textAnchor="middle" fill="white" fontSize="11" fontWeight="900" className="pointer-events-none">
@@ -189,7 +204,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Geo Distribution (Simplified) */}
+      {/* Geo Distribution */}
       <div className="bg-white rounded-[40px] border border-black/5 p-8 flex flex-col gap-8 shadow-sm">
         <div className="flex items-center gap-2">
             <Globe className="h-5 w-5" />

@@ -8,27 +8,48 @@ import {
   Clock,
   ArrowUpRight,
   Plus,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddResourceModal from "@/components/admin/AddResourceModal";
-
-const stats = [
-  { label: "Total Resources", value: "128", icon: Database, trend: "+12%", color: "bg-blue-500" },
-  { label: "Monthly Views", value: "14.2k", icon: Eye, trend: "+18%", color: "bg-purple-500" },
-  { label: "Submissions", value: "45", icon: Inbox, trend: "+5%", color: "bg-orange-500" },
-  { label: "Active Creators", value: "82", icon: TrendingUp, trend: "+24%", color: "bg-green-500" },
-];
-
-const recentSubmissions = [
-  { id: 1, name: "Plexi Dark UI", category: "SaaS", status: "Pending", time: "2h ago" },
-  { id: 2, name: "Studio Portfolio", category: "Landing", status: "Approved", time: "5h ago" },
-  { id: 3, name: "Ecom Pro Kit", category: "Mobile", status: "Pending", time: "1d ago" },
-];
 
 export default function AdminDashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [stats, setStats] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+        const [resResp, subResp] = await Promise.all([
+            fetch("/api/resources"),
+            fetch("/api/submissions")
+        ]);
+        const resources = await resResp.json();
+        const subs = await subResp.json();
+        
+        setSubmissions(subs.slice(0, 3)); // Only top 3 for dashboard
+        
+        // Compute stats from data
+        const totalViews = resources.reduce((acc: number, r: any) => acc + (r.views || 0), 0);
+        setStats([
+          { label: "Total Resources", value: resources.length, icon: Database, trend: "+10%", color: "bg-blue-500" },
+          { label: "Total Views", value: totalViews >= 1000 ? `${(totalViews/1000).toFixed(1)}k` : totalViews, icon: Eye, trend: "+15%", color: "bg-purple-500" },
+          { label: "Submissions", value: subs.length, icon: Inbox, trend: "+5%", color: "bg-orange-500" },
+          { label: "Recent Activity", value: "Active", icon: TrendingUp, trend: "Live", color: "bg-green-500" },
+        ]);
+    } catch (error) {
+        console.error("Dashboard fetch failed:", error);
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-10">
@@ -87,24 +108,32 @@ export default function AdminDashboard() {
           </div>
           
           <div className="flex flex-col gap-4">
-            {recentSubmissions.map((sub) => (
-              <div key={sub.id} className="flex items-center justify-between p-4 rounded-3xl border border-black/2 bg-[#FDFCF9] hover:bg-white hover:shadow-lg hover:shadow-black/2 transition-all cursor-pointer">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-black/5 flex items-center justify-center">
-                    <Database className="h-5 w-5 text-[#666]" />
+            {isLoading ? (
+               <div className="flex flex-col gap-4 animate-pulse">
+                   {[1,2,3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-3xl"></div>)}
+               </div>
+            ) : submissions.length === 0 ? (
+                <div className="p-10 text-center text-[#999] font-medium italic">No recent submissions found.</div>
+            ) : (
+                submissions.map((sub) => (
+                  <div key={sub.id} className="flex items-center justify-between p-4 rounded-3xl border border-black/2 bg-[#FDFCF9] hover:bg-white hover:shadow-lg hover:shadow-black/2 transition-all cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-2xl bg-black/5 flex items-center justify-center">
+                        <Database className="h-5 w-5 text-[#666]" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold">{sub.resourceTitle}</h4>
+                        <p className="text-[12px] font-semibold text-[#999]">{sub.resourceCategory} • {new Date(sub.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                      sub.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'
+                    }`}>
+                      {sub.status}
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold">{sub.name}</h4>
-                    <p className="text-[12px] font-semibold text-[#999]">{sub.category} • {sub.time}</p>
-                  </div>
-                </div>
-                <div className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
-                  sub.status === 'Approved' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'
-                }`}>
-                  {sub.status}
-                </div>
-              </div>
-            ))}
+                ))
+            )}
           </div>
         </div>
 
@@ -131,10 +160,3 @@ export default function AdminDashboard() {
   );
 }
 
-function ArrowRight({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-    </svg>
-  );
-}

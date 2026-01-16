@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Plus, 
   Search, 
@@ -15,14 +15,49 @@ import {
   ExternalLink
 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { templates } from "@/constants/templates";
 import AddResourceModal from "@/components/admin/AddResourceModal";
 
 export default function AdminResources() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [resources, setResources] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredTemplates = templates.filter(t => 
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  const fetchResources = async () => {
+    try {
+        const response = await fetch("/api/resources");
+        const data = await response.json();
+        setResources(data);
+    } catch (error) {
+        console.error("Failed to fetch resources:", error);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this resource?")) return;
+    
+    try {
+      const response = await fetch(`/api/resources/${id}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) throw new Error("Failed to delete");
+      
+      // Remove from local state
+      setResources(resources.filter(r => r.id !== id));
+    } catch (error) {
+      console.error("Failed to delete resource:", error);
+      alert("Failed to delete resource. Please try again.");
+    }
+  };
+
+  const filteredTemplates = resources.filter(t => 
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -78,74 +113,65 @@ export default function AdminResources() {
 
       {/* Resource Table/List */}
       <div className="flex flex-col gap-3">
-        {filteredTemplates.map((template) => (
-          <div key={template.id} className="group flex items-center justify-between p-5 bg-white rounded-[28px] border border-black/5 hover:border-black/10 hover:shadow-xl hover:shadow-black/2 transition-all">
-            <div className="flex items-center gap-6">
-              {/* Thumbnail Mini */}
-              <div className="h-14 w-14 rounded-2xl bg-black/5 overflow-hidden border border-black/5">
-                <img src={template.image} alt="" className="h-full w-full object-cover" />
-              </div>
-
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[15px] font-black">{template.title}</h3>
-                  <div className="px-2 py-0.5 rounded-full bg-black/5 text-[10px] font-black uppercase tracking-wider text-[#666]">
-                    {template.category}
+        {isLoading ? (
+          <div className="flex items-center justify-center p-20 bg-white rounded-[40px] border border-black/5">
+            <div className="h-8 w-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-20 bg-white rounded-[40px] border border-black/5 text-center">
+             <p className="text-[#999] font-medium">No resources found matching your search.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {filteredTemplates.map((template) => (
+              <div key={template.id} className="group flex items-center justify-between p-6 bg-white hover:bg-[#FDFCF9] rounded-[32px] border border-black/5 transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-black/5">
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-24 rounded-2xl overflow-hidden border border-black/5 bg-black/5">
+                    <img src={template.image} alt={template.title} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-[15px] font-black">{template.title}</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-black/5 text-[10px] font-black uppercase tracking-wider">{template.category}</span>
+                    </div>
+                    <p className="text-[12px] font-medium text-[#999] mt-1 line-clamp-1 max-w-sm">{template.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-[12px] font-semibold text-[#999]">
-                  <span className="flex items-center gap-1">
-                    <Globe className="h-3 w-3" />
-                    plexi.com/preview/{template.id}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Added Jan 12, 2026
-                  </span>
+
+                <div className="flex items-center gap-10">
+                  {/* Post Analytics */}
+                  <div className="hidden xl:flex items-center gap-8 mr-10">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#999]">Views</span>
+                      <span className="text-[14px] font-black">{template.views}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#999]">Clicks</span>
+                      <span className="text-[14px] font-black">{template.clicks}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#999]">Conv.</span>
+                      <span className="text-[14px] font-black">
+                        {template.views > 0 ? ((template.clicks / template.views) * 100).toFixed(1) : "0.0"}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button title="Visit Site" className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-black/5 text-[#666] hover:text-black transition-all">
+                      <ExternalLink className="h-4 w-4" />
+                    </button>
+                    <button title="Edit Resource" className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-black/5 text-[#666] hover:text-black transition-all">
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button title="Delete Resource" onClick={() => handleDelete(template.id)} className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-50 text-[#666] hover:text-red-500 transition-all">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center gap-10">
-              {/* Post Analytics */}
-              <div className="hidden xl:flex items-center gap-8 mr-10">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#999]">Views</span>
-                  <span className="text-[14px] font-black">{Math.floor(Math.random() * 5000) + 1000}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#999]">Clicks</span>
-                  <span className="text-[14px] font-black">{Math.floor(Math.random() * 800) + 200}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#999]">Conv.</span>
-                  <span className="text-[14px] font-black">{(Math.random() * 15 + 5).toFixed(1)}%</span>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                <button title="Visit Site" className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-black/5 text-[#666] hover:text-black transition-all">
-                  <ExternalLink className="h-4 w-4" />
-                </button>
-                <button title="Edit Resource" className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-black/5 text-[#666] hover:text-black transition-all">
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button title="Delete Resource" className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-50 text-[#666] hover:text-red-500 transition-all">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {filteredTemplates.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-black/10">
-            <div className="h-16 w-16 rounded-3xl bg-black/5 flex items-center justify-center mb-4">
-              <Database className="h-8 w-8 text-[#999]" />
-            </div>
-            <h3 className="text-xl font-black">No resources found</h3>
-            <p className="text-[#999] font-medium mt-1">Try adjusting your search or filters.</p>
+            ))}
           </div>
         )}
       </div>

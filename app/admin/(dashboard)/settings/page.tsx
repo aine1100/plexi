@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   User,
   Lock,
@@ -15,8 +15,54 @@ import Button from "@/components/ui/Button";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("General");
+  const [settings, setSettings] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+        const response = await fetch("/api/settings");
+        const data = await response.json();
+        setSettings(data);
+    } catch (error) {
+        console.error("Failed to fetch settings:", error);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+        const response = await fetch("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(settings),
+        });
+        if (response.ok) alert("Settings saved successfully!");
+    } catch (error) {
+        console.error("Failed to save settings:", error);
+    } finally {
+        setIsSaving(false);
+    }
+  };
 
   const tabs = ["General", "Security", "Notifications", "Team"];
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-10">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-black">Settings</h1>
+          <p className="text-[#666] font-medium mt-1">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-10">
@@ -68,12 +114,12 @@ export default function SettingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-6">
                     <div className="flex flex-col gap-2">
-                      <label className="text-[11px] font-extrabold uppercase tracking-widest text-black/40 px-1">Display Name</label>
-                      <input type="text" defaultValue="Admin User" className="h-12 w-full bg-[#F9F9F9] rounded-2xl px-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all" />
+                      <label className="text-[11px] font-extrabold uppercase tracking-widest text-black/40 px-1">Site Name</label>
+                      <input type="text" value={settings?.siteName || ""} onChange={(e) => setSettings({...settings, siteName: e.target.value})} className="h-12 w-full bg-[#F9F9F9] rounded-2xl px-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all" />
                     </div>
                     <div className="flex flex-col gap-2">
                       <label className="text-[11px] font-extrabold uppercase tracking-widest text-black/40 px-1">Support Email</label>
-                      <input type="email" defaultValue="hi@plexi.com" className="h-12 w-full bg-[#F9F9F9] rounded-2xl px-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all" />
+                      <input type="email" value={settings?.supportEmail || ""} onChange={(e) => setSettings({...settings, supportEmail: e.target.value})} className="h-12 w-full bg-[#F9F9F9] rounded-2xl px-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all" />
                     </div>
                   </div>
                 </div>
@@ -88,11 +134,11 @@ export default function SettingsPage() {
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
                       <label className="text-[11px] font-extrabold uppercase tracking-widest text-black/40 px-1">Meta Title</label>
-                      <input type="text" defaultValue="Plexi - High-Fidelity Web Templates" className="h-12 w-full bg-[#F9F9F9] rounded-2xl px-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all" />
+                      <input type="text" value={settings?.metaTitle || ""} onChange={(e) => setSettings({...settings, metaTitle: e.target.value})} className="h-12 w-full bg-[#F9F9F9] rounded-2xl px-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all" />
                     </div>
                     <div className="flex flex-col gap-2">
                       <label className="text-[11px] font-extrabold uppercase tracking-widest text-black/40 px-1">Meta Description</label>
-                      <textarea defaultValue="The curated gallery for high-fidelity web templates." className="h-24 w-full bg-[#F9F9F9] rounded-2xl p-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all resize-none" />
+                      <textarea value={settings?.metaDescription || ""} onChange={(e) => setSettings({...settings, metaDescription: e.target.value})} className="h-24 w-full bg-[#F9F9F9] rounded-2xl p-4 text-[14px] font-semibold outline-none border-2 border-transparent focus:border-black/5 focus:bg-white transition-all resize-none" />
                     </div>
                   </div>
                 </div>
@@ -141,8 +187,8 @@ export default function SettingsPage() {
             )}
 
             <div className="pt-4 flex items-center justify-between">
-              <Button variant="primary" height={56} className="px-10 rounded-2xl font-black text-[15px] shadow-xl shadow-black/10 transition-all hover:scale-[1.02]">
-                Save Changes
+              <Button variant="primary" height={56} onClick={handleSave} disabled={isSaving} className="px-10 rounded-2xl font-black text-[15px] shadow-xl shadow-black/10 transition-all hover:scale-[1.02]">
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
               <div className="flex items-center gap-2 text-green-600">
                 <Check className="h-4 w-4" />

@@ -1,56 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Inbox,
-    Search,
     Check,
     X,
     User,
     Globe,
-    Mail,
     ExternalLink,
     MessageSquare
 } from "lucide-react";
 
-const mockSubmissions = [
-    {
-        id: 1,
-        name: "Plexi Dark UI",
-        email: "sarah@design.co",
-        url: "https://figma.com/community/123",
-        category: "SaaS",
-        desc: "A sleek dark mode UI kit for modern dashboards.",
-        time: "2h ago"
-    },
-    {
-        id: 2,
-        name: "Ecom Pro Kit",
-        email: "mike@ecom.io",
-        url: "https://dribbble.com/mike",
-        category: "Mobile",
-        desc: "Mobile-first commerce template with 50+ screens.",
-        time: "1d ago"
-    },
-    {
-        id: 3,
-        name: "Studio Portfolio",
-        email: "hello@studio.com",
-        url: "https://studio.com",
-        category: "Landing",
-        desc: "Minimalist landing page for creative studios.",
-        time: "2d ago"
-    },
-];
-
 export default function AdminSubmissions() {
-    const [submissions, setSubmissions] = useState(mockSubmissions);
+    const [submissions, setSubmissions] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleAction = (id: number, approved: boolean) => {
-        // In a real app, this would call an API
-        setSubmissions(submissions.filter(s => s.id !== id));
-        alert(approved ? "Resource approved and listed!" : "Submission rejected.");
+    useEffect(() => {
+        fetchSubmissions();
+    }, []);
+
+    const fetchSubmissions = async () => {
+        try {
+            const response = await fetch("/api/submissions");
+            const data = await response.json();
+            // Filter to only show pending submissions
+            const pending = Array.isArray(data) 
+                ? data.filter((s: any) => s.status === "PENDING")
+                : [];
+            setSubmissions(pending);
+        } catch (error) {
+            console.error("Failed to fetch submissions:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    const handleAction = async (id: string, approved: boolean) => {
+        try {
+            if (approved) {
+                // Approve and create resource
+                const response = await fetch(`/api/submissions/${id}/approve`, {
+                    method: "POST",
+                });
+                if (!response.ok) throw new Error("Failed to approve");
+            } else {
+                // Reject - update status
+                const response = await fetch(`/api/submissions/${id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: "REJECTED" }),
+                });
+                if (!response.ok) throw new Error("Failed to reject");
+            }
+            
+            // Remove from local state
+            setSubmissions(submissions.filter(s => s.id !== id));
+            alert(approved ? "Resource approved and listed!" : "Submission rejected.");
+        } catch (error) {
+            console.error("Action failed:", error);
+            alert("Failed to process submission. Please try again.");
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[40px] border border-dashed border-black/10">
+                <p className="text-xl font-black">Loading submissions...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-10">
