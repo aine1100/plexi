@@ -17,10 +17,24 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [admin, setAdmin] = useState<{ email: string } | null>(null);
 
   useEffect(() => {
     fetchNotifications();
+    fetchAdmin();
   }, []);
+
+  const fetchAdmin = async () => {
+    try {
+      const response = await fetch("/api/admin/me");
+      if (response.ok) {
+        const data = await response.json();
+        setAdmin(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch admin:", error);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -171,8 +185,8 @@ export default function Header() {
             <User className="h-4 w-4 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[12px] font-bold leading-tight">Admin User</span>
-            <span className="text-[10px] font-medium text-[#999] leading-tight">Super Admin</span>
+            <span className="text-[12px] font-bold leading-tight truncate max-w-[150px]">{admin?.email || "Admin User"}</span>
+            <span className="text-[10px] font-medium text-[#999] leading-tight">Admin Portal</span>
           </div>
         </div>
       </div>

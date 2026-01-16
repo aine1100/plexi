@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDataSource } from "@/lib/db/data-source";
-import { Admin, AdminRole } from "@/lib/db/entities/Admin";
+import { Admin } from "@/lib/db/entities/Admin";
 import { Settings } from "@/lib/db/entities/Settings";
-import { hashPassword } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -10,17 +9,8 @@ export async function GET() {
     const adminRepo = dataSource.getRepository(Admin);
     const settingsRepo = dataSource.getRepository(Settings);
 
-    // Initial Admin with hashed password
+    // Check if any admin exists
     const adminCount = await adminRepo.count();
-    if (adminCount === 0) {
-      const hashedPassword = await hashPassword("admin123");
-      const defaultAdmin = adminRepo.create({
-        email: "admin@plexi.com",
-        password: hashedPassword,
-        role: AdminRole.SUPER_ADMIN,
-      });
-      await adminRepo.save(defaultAdmin);
-    }
 
     // Initial Settings
     const settings = await settingsRepo.findOne({ where: { id: "singleton" } });
@@ -35,10 +25,15 @@ export async function GET() {
       await settingsRepo.save(defaultSettings);
     }
 
-    return NextResponse.json({ success: true, message: "Database initialized" });
+    return NextResponse.json({ 
+      success: true, 
+      message: "Database initialized",
+      needsAdmin: adminCount === 0
+    });
   } catch (error) {
     console.error("Setup failed:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
 

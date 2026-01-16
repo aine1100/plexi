@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     BarChart3,
@@ -11,6 +11,7 @@ import {
     LogOut,
     Sparkles
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const menuItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -22,6 +23,25 @@ const menuItems = [
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            const response = await fetch("/api/admin/logout", {
+                method: "POST",
+            });
+            
+            if (response.ok) {
+                toast.success("Logged out successfully");
+                router.push("/admin/login");
+            } else {
+                toast.error("Logout failed");
+            }
+        } catch (error) {
+            console.error("Logout error:", error);
+            toast.error("Logout failed");
+        }
+    };
 
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-black/5 bg-white p-6 flex flex-col justify-between">
@@ -56,7 +76,10 @@ export default function Sidebar() {
             </div>
 
             {/* Logout */}
-            <button className="flex items-center gap-3 px-4 py-3 rounded-2xl text-[14px] font-semibold text-[#666] hover:bg-red-50 hover:text-red-600 transition-all border border-transparent hover:border-red-100">
+            <button 
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-[14px] font-semibold text-[#666] hover:bg-red-50 hover:text-red-600 transition-all border border-transparent hover:border-red-100"
+            >
                 <LogOut className="h-4 w-4" />
                 Logout
             </button>
